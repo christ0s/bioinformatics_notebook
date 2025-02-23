@@ -4,6 +4,7 @@ import os
 import io
 import base64
 import logging
+import sys
 import pickle
 from collections import Counter
 from Bio import Entrez, SeqIO, SearchIO
@@ -41,7 +42,7 @@ def fetch_sequences_from_ncbi(sequence_ids):
             sequences.append(SeqIO.read(handle, "fasta"))
             handle.close()
         except Exception as e:
-            logging.error(f"Error fetching {seq_id}: {e}")
+            print(f"Error fetching {seq_id}: {e}")
     return sequences
 
 def compute_gc_content(sequence):
@@ -100,7 +101,9 @@ def extract_top_proteins(protein_sequence):
 
 def run_blast_search(fasta_file):
     try:
+        
         protein_seq = SeqIO.read(fasta_file, "fasta")
+        print(f"BLAST search start with protein seq  :", {protein_seq.seq})
         result_handle = NCBIWWW.qblast("blastp", "pdb", protein_seq.seq)
         
         # Ensure to parse results correctly.
@@ -122,24 +125,24 @@ def run_blast_search(fasta_file):
         with open(cache_file, "wb") as f:
             pickle.dump(results, f)
 
-        logging.debug(f"BLAST search completed successfully. Found {len(results)} hits.")
+        print(f"BLAST search completed successfully. Found {len(results)} hits.")
         return results
 
     except Exception as e:
-        logging.error(f"Error during BLAST search: {e}")
+        print(f"Error during BLAST search: {e}")
         return []
     
 @app.route("/blast_search", methods=["POST"])
 def blast_search():
-    logging.debug("BLAST search endpoint was called.")
+    print("BLAST search endpoint was called.")
     data = request.get_json()
 
     if not data or "protein_sequence" not in data:
-        logging.error("No protein sequence provided for BLAST search.")
+        print("No protein sequence provided for BLAST search.")
         return jsonify({"error": "No protein sequence provided"}), 400
 
     protein_sequence = data.get("protein_sequence")
-    logging.debug(f"Processing BLAST search for sequence: {protein_sequence[:50]}...")
+    print(f"Processing BLAST search for sequence: {protein_sequence[:50]}...")
 
     # Generate a unique filename using a hash of the protein sequence
     protein_hash = hashlib.md5(protein_sequence.encode()).hexdigest()
@@ -149,8 +152,10 @@ def blast_search():
     with open(fasta_file, "w") as f:
         f.write(f">Protein\n{protein_sequence}\n")
 
+    print(f"Protein sequence saved to file: {fasta_file}")
+
     blast_results = run_blast_search(fasta_file)  # Pass the correct file path
-    logging.debug(f"BLAST search returned {len(blast_results)} results.")
+    print(f"BLAST search returned {len(blast_results)} results.")
 
     return jsonify(blast_results)
 
@@ -158,20 +163,20 @@ def blast_search():
 @app.route("/", methods=["GET", "POST"])
 def home():
     if request.method == "POST":
-        logging.debug("Processing uploaded file.")
+        print("Processing uploaded file.")
         file = request.files.get("file")
 
         if not file:
-            logging.error("No file part in the request.")
+            print("No file part in the request.")
             return "No file part", 400
 
         if file.filename == "":
-            logging.error("No selected file.")
+            print("No selected file.")
             return "No selected file", 400
 
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
         file.save(filepath)
-        logging.debug(f"File saved at: {filepath}")
+        print(f"File saved at: {filepath}")
 
         sequence_ids = read_sequence_ids(filepath)
         sequences = fetch_sequences_from_ncbi(sequence_ids)
@@ -211,11 +216,10 @@ def home():
                 'top_long_proteins_files': top_5_proteins_files
             })
 
-        logging.debug("File processing completed successfully.")
+        print("File processing completed successfully.")
         return render_template("results.html", results=results)
 
     return render_template("index.html")
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s', force=True)
     app.run(debug=True)

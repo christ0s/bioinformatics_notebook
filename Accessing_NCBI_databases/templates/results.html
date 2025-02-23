@@ -12,7 +12,15 @@
             element.style.display = element.style.display === "none" ? "block" : "none";
         }
 
-        function performBlastSearch(proteinSequence) {
+        function performBlastSearch(index) {
+            const selectedProtein = document.querySelector(`input[name="protein_sequence_${index}"]:checked`);
+            if (!selectedProtein) {
+                alert('Please select a protein sequence for BLAST search.');
+                return;
+            }
+
+            const proteinSequence = selectedProtein.value;
+
             fetch('/blast_search', {
                 method: 'POST',
                 headers: {
@@ -28,7 +36,7 @@
                 } else {
                     console.log('Success:', data);
                     // Update the DOM with the BLAST results
-                    const blastResultsContainer = document.getElementById('blast-results');
+                    const blastResultsContainer = document.getElementById(`blast-results-${index}`);
                     blastResultsContainer.innerHTML = ''; // Clear previous results
                     data.forEach(result => {
                         const resultElement = document.createElement('div');
@@ -94,11 +102,13 @@
                     <p><strong>Top 5 Protein Sequences:</strong></p>
                     <ul>
                         {% for protein in result.top_long_proteins %}
-                        <li>{{ protein[:50] }}</li>
+                        <li>
+                            <input type="radio" name="protein_sequence_{{ loop.index }}" value="{{ protein }}">
+                            {{ protein[:50] }}
+                        </li>
                         {% endfor %}
                     </ul>
-                    <button class="btn btn-warning mt-3" onclick="performBlastSearch('{{ result.protein }}')">Perform BLAST Search</button>
-                    <button class="btn btn-info mt-3" data-toggle="modal" data-target="#plotModal-{{ loop.index }}">Show Plots</button>
+                    <button class="btn btn-warning mt-3" onclick="performBlastSearch({{ loop.index }})">Perform BLAST Search</button>
                     <div id="blast-results-{{ loop.index }}" class="mt-3"></div>
                 </div>
             </div>
