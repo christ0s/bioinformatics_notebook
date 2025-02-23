@@ -1,0 +1,67 @@
+<!doctype html>
+<html>
+<head>
+    <title>Interactive Results</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script>
+        function toggleVisibility(id) {
+            const element = document.getElementById(id);
+            if (element) {
+                element.style.display = (element.style.display === 'none' || element.style.display === '') ? 'block' : 'none';
+            }
+        }
+    </script>
+</head>
+<body class="bg-dark text-light">
+    <div class="d-flex">
+        <!-- Navbar -->
+        <nav class="navbar navbar-expand-lg navbar-dark bg-secondary flex-column vh-100 p-3">
+            <a class="navbar-brand" href="#">Genomes SEN</a>
+            <div class="navbar-nav flex-column">
+                {% for result in results %}
+                    <div class="nav-item">
+                        <a class="nav-link" href="#">{{ result.id }}</a>
+                        <button class="btn btn-sm btn-info mt-1" onclick="toggleVisibility('info-{{ loop.index }}')">Toggle Info</button>
+                        <button class="btn btn-sm btn-info mt-1" onclick="toggleVisibility('plot-{{ loop.index }}')">Toggle Plot</button>
+                    </div>
+                {% endfor %}
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <div class="container-fluid p-4">
+            {% for result in results %}
+            <div id="info-plot-container-{{ loop.index }}" class="row mb-4">
+                <!-- Info Section -->
+                <div id="info-{{ loop.index }}" class="col-md-6 bg-secondary p-3 rounded" style="display: none;">
+                    <h3>Sequence ID: {{ result.id }}</h3>
+                    <p><strong>Genome Name:</strong> {{ result.genome_name }}</p>
+                    <p><strong>DNA:</strong> {{ result.dna[:50] }}...</p>
+                    <p><strong>RNA:</strong> {{ result.rna[:50] }}...</p>
+                    <p><strong>Protein:</strong> {{ result.protein[:50] }}...</p>
+                    <p><strong>GC Content:</strong> {{ result.gc_content }}%</p>
+                    <p><strong>Total Amino Acids:</strong> {{ result.total_amino_acids }}</p>
+                    <p><strong>Top 20 Amino Acids:</strong></p>
+                    <ul>
+                        {% for aa, count in result.amino_acid_counts %}
+                        <li><strong>{{ aa }}:</strong> {{ count }}</li>
+                        {% endfor %}
+                    </ul>
+                    <p><strong>Top 5 Protein Sequence:</strong></p>
+                    <ol>
+                        {% for protein in result.top_5_proteins %}
+                        <li>{{ protein[:50] }}</li>
+                        {% endfor %}
+                    </ol>
+                </div>
+                <!-- Plot Section -->
+                <div id="plot-{{ loop.index }}" class="col-md-6 bg-secondary p-3 rounded" style="display: none;">
+                    {{ result.nucleotide_distribution_plot|safe }}
+                    {{ result.amino_acid_frequencies_plot|safe }}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</body>
+</html>
