@@ -1,67 +1,135 @@
-<!doctype html>
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-    <title>Interactive Results</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Genome Analyzer</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
     <script>
         function toggleVisibility(id) {
             const element = document.getElementById(id);
-            if (element) {
-                element.style.display = (element.style.display === 'none' || element.style.display === '') ? 'block' : 'none';
-            }
+            element.style.display = element.style.display === "none" ? "block" : "none";
+        }
+
+        function performBlastSearch(proteinSequence) {
+            fetch('/blast_search', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ protein_sequence: proteinSequence })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    console.error('Error:', data.error);
+                    alert('Error: ' + data.error);
+                } else {
+                    console.log('Success:', data);
+                    // Update the DOM with the BLAST results
+                    const blastResultsContainer = document.getElementById('blast-results');
+                    blastResultsContainer.innerHTML = ''; // Clear previous results
+                    data.forEach(result => {
+                        const resultElement = document.createElement('div');
+                        resultElement.innerHTML = `
+                            <p><strong>Sequence ID:</strong> ${result['Sequence ID']}</p>
+                            <p><strong>Description:</strong> ${result['Description']}</p>
+                            <p><strong>E-value:</strong> ${result['E-value']}</p>
+                            <p><strong>Bit Score:</strong> ${result['Bit Score']}</p>
+                            <p><strong>Alignment:</strong> ${result['Alignment']}</p>
+                        `;
+                        blastResultsContainer.appendChild(resultElement);
+                    });
+                }
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+                alert('An error occurred while performing the BLAST search.');
+            });
         }
     </script>
 </head>
 <body class="bg-dark text-light">
     <div class="d-flex">
-        <!-- Navbar -->
-        <nav class="navbar navbar-expand-lg navbar-dark bg-secondary flex-column vh-100 p-3">
-            <a class="navbar-brand" href="#">Genomes SEN</a>
-            <div class="navbar-nav flex-column">
-                {% for result in results %}
-                    <div class="nav-item">
-                        <a class="nav-link" href="#">{{ result.id }}</a>
-                        <button class="btn btn-sm btn-info mt-1" onclick="toggleVisibility('info-{{ loop.index }}')">Toggle Info</button>
-                        <button class="btn btn-sm btn-info mt-1" onclick="toggleVisibility('plot-{{ loop.index }}')">Toggle Plot</button>
-                    </div>
-                {% endfor %}
+        <!-- Sidebar Navigation -->
+        <nav class="navbar navbar-expand-lg navbar-dark bg-secondary flex-column vh-100 p-3 shadow-lg">
+            <a class="navbar-brand text-light font-weight-bold" href="#">Genomes SEN</a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <div class="navbar-nav flex-column">
+                    {% for result in results %}
+                        <div class="nav-item">
+                            <a class="nav-link text-light" href="#info-{{ loop.index }}">{{ result.id.split('.')[0] }}</a>
+                        </div>
+                    {% endfor %}
+                </div>
             </div>
         </nav>
 
         <!-- Main Content -->
-        <div class="container-fluid p-4">
+        <div class="container-fluid p-4 main-content">
             {% for result in results %}
-            <div id="info-plot-container-{{ loop.index }}" class="row mb-4">
-                <!-- Info Section -->
-                <div id="info-{{ loop.index }}" class="col-md-6 bg-secondary p-3 rounded" style="display: none;">
-                    <h3>Sequence ID: {{ result.id }}</h3>
+            <div id="info-{{ loop.index }}" class="card bg-secondary text-light p-3 mb-4 shadow-lg info-section">
+                <div class="card-body">
+                    <h3 class="card-title">Sequence ID: {{ result.id }}</h3>
                     <p><strong>Genome Name:</strong> {{ result.genome_name }}</p>
                     <p><strong>DNA:</strong> {{ result.dna[:50] }}...</p>
                     <p><strong>RNA:</strong> {{ result.rna[:50] }}...</p>
                     <p><strong>Protein:</strong> {{ result.protein[:50] }}...</p>
                     <p><strong>GC Content:</strong> {{ result.gc_content }}%</p>
                     <p><strong>Total Amino Acids:</strong> {{ result.total_amino_acids }}</p>
-                    <p><strong>Top 20 Amino Acids:</strong></p>
-                    <ul>
+                    <p onclick="toggleVisibility('amino-acids-{{ loop.index }}')" style="cursor: pointer; text-decoration: underline;">
+                        Show Amino Acid Counts
+                    </p>
+                    <ul id="amino-acids-{{ loop.index }}" style="display: none;">
                         {% for aa, count in result.amino_acid_counts %}
                         <li><strong>{{ aa }}:</strong> {{ count }}</li>
                         {% endfor %}
                     </ul>
-                    <p><strong>Top 5 Protein Sequence:</strong></p>
-                    <ol>
-                        {% for protein in result.top_5_proteins %}
+                    <p><strong>Top 5 Protein Sequences:</strong></p>
+                    <ul>
+                        {% for protein in result.top_long_proteins %}
                         <li>{{ protein[:50] }}</li>
                         {% endfor %}
-                    </ol>
+                    </ul>
+                    <button class="btn btn-warning mt-3" onclick="performBlastSearch('{{ result.protein }}')">Perform BLAST Search</button>
+                    <button class="btn btn-info mt-3" data-toggle="modal" data-target="#plotModal-{{ loop.index }}">Show Plots</button>
+                    <div id="blast-results-{{ loop.index }}" class="mt-3"></div>
                 </div>
-                <!-- Plot Section -->
-                <div id="plot-{{ loop.index }}" class="col-md-6 bg-secondary p-3 rounded" style="display: none;">
-                    {{ result.nucleotide_distribution_plot|safe }}
-                    {{ result.amino_acid_frequencies_plot|safe }}
+            </div>
+
+            <!-- Modal -->
+            <div class="modal fade" id="plotModal-{{ loop.index }}" tabindex="-1" role="dialog" aria-labelledby="plotModalLabel-{{ loop.index }}" aria-hidden="true">
+                <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="plotModalLabel-{{ loop.index }}">Plots for {{ result.id }}</h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body d-flex justify-content-between">
+                            <div class="plot-section">
+                                {{ result.nucleotide_distribution|safe }}
+                            </div>
+                            <div class="plot-section">
+                                {{ result.amino_acid_distribution|safe }}
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                        </div>
+                    </div>
                 </div>
             </div>
             {% endfor %}
         </div>
     </div>
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 </body>
 </html>

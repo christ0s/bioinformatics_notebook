@@ -1,18 +1,32 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sequence Analyzer</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
 </head>
 <body class="bg-dark text-light">
     <div class="container mt-5">
-        <h1 class="text-center">Upload Sequence File</h1>
-        <form method="post" enctype="multipart/form-data" class="mt-4">
-            <div class="form-group">
-                <input type="file" name="file" class="form-control-file">
-            </div>
-            <button type="submit" class="btn btn-primary mt-3">Analyze</button>
-        </form>
+        <div class="card bg-secondary text-light shadow-lg p-4">
+            <h1 class="text-center mb-4">Upload Sequence File</h1>
+            <form method="post" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label for="fileInput" class="font-weight-bold">Select a file</label>
+                    <div class="custom-file">
+                        <input type="file" name="file" class="custom-file-input" id="fileInput" required>
+                        <label class="custom-file-label" for="fileInput">Choose file...</label>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary btn-lg btn-block mt-3">Analyze</button>
+            </form>
+        </div>
     </div>
+    <script>
+        document.getElementById('fileInput').addEventListener('change', function(event) {
+            let fileName = event.target.files[0]?.name || 'Choose file...';
+            this.nextElementSibling.innerText = fileName;
+        });
+    </script>
 </body>
 </html>
