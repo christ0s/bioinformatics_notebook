@@ -54,17 +54,19 @@
     <div class="d-flex">
         <!-- Sidebar Navigation -->
         <nav class="navbar navbar-expand-lg navbar-dark bg-secondary flex-column vh-100 p-3 shadow-lg">
-            <a class="navbar-brand text-light font-weight-bold" href="#">Genomes SEN</a>
-            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <div class="navbar-nav flex-column">
-                    {% for result in results %}
-                        <div class="nav-item">
-                            <a class="nav-link text-light" href="#info-{{ loop.index }}">{{ result.id.split('.')[0] }}</a>
-                        </div>
-                    {% endfor %}
+            <div class="d-flex flex-column w-100">
+                <a class="navbar-brand text-light font-weight-bold" href="#">Genomes SEN</a>
+                <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <div class="navbar-nav flex-column">
+                        {% for result in results %}
+                            <div class="nav-item">
+                                <a class="nav-link text-light" href="#info-{{ loop.index }}">{{ result.id.split('.')[0] }}</a>
+                            </div>
+                        {% endfor %}
+                    </div>
                 </div>
             </div>
         </nav>
@@ -103,7 +105,7 @@
 
             <!-- Modal -->
             <div class="modal fade" id="plotModal-{{ loop.index }}" tabindex="-1" role="dialog" aria-labelledby="plotModalLabel-{{ loop.index }}" aria-hidden="true">
-                <div class="modal-dialog" role="document">
+                <div class="modal-dialog modal-xl" role="document">
                     <div class="modal-content">
                         <div class="modal-header">
                             <h5 class="modal-title" id="plotModalLabel-{{ loop.index }}">Plots for {{ result.id }}</h5>

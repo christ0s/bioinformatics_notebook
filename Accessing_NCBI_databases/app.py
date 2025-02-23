@@ -61,7 +61,7 @@ def count_amino_acids(protein_sequence):
 
 def plot_distribution(counts, title, x_label='Nucleotide', y_label='Percentage'):
     """Create a bar chart and return it as an HTML-safe image."""
-    plt.figure(figsize=(4, 4))
+    plt.figure(figsize=(5, 5))
     plt.bar(counts.keys(), counts.values())
     plt.xlabel(x_label)
     plt.ylabel(y_label)
