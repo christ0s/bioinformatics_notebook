@@ -56,6 +56,12 @@
                 alert('An error occurred while performing the BLAST search.');
             });
         }
+
+        function showModal(index) {
+            const modal = document.getElementById(`plotModal-${index}`);
+            const modalInstance = new bootstrap.Modal(modal);
+            modalInstance.show();
+        }
     </script>
 </head>
 <body class="bg-dark text-light">
@@ -108,8 +114,9 @@
                         </li>
                         {% endfor %}
                     </ul>
-                    <button class="btn btn-warning mt-3" onclick="performBlastSearch({{ loop.index }})">Perform BLAST Search</button>
+                    <button class="btn btn-warning mt-3" onclick="performBlastSearch( {{ loop.index }} )">Perform BLAST Search</button>
                     <div id="blast-results-{{ loop.index }}" class="mt-3"></div>
+                    <button class="btn btn-info mt-3" onclick="showModal( {{ loop.index }} )">Show Plots</button>
                 </div>
             </div>
 
