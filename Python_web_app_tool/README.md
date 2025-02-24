@@ -58,9 +58,7 @@ bioinformatics_notebook/
 │   ├── static/
 │   ├── templates/
 │   └── README.md
-│
-└── Accessing_NCBI_databases/
-    └── All useful python or R scripts for bioinformatics analysis
+
 ```
 
 ## 🛠️ Technologies Used
@@ -81,7 +79,7 @@ Display Problems: Clear browser cache if plots don't show
 Contributions are welcome! Please read our contributing guidelines and submit pull requests.
 
 ## 📄 License
-[MIT] - See LICENSE file for details
+Under [MIT]  License
 
 📮 Contact
 For support or queries: 
