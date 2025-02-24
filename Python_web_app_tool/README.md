@@ -112,12 +112,12 @@ conda deactivate
 
 ## License
 
-[Your License Here]
+Under MIT License
 
 ## Contributors
 
-[Your Name/Team]
+[ckristo/Team]
 
 ## Contact
 
-For issues and support, please [create an issue](repository-issues-url) or contact [your-email].
+For issues and support, please [create an issue](repository-issues-url) or contact [chrissanthis@gmail.coml].
