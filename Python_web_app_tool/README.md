@@ -1,89 +1,123 @@
 # Genome Analysis Web Tool
 
-An interactive web application for genomic sequence analysis, BLAST searching, and visualization built with Flask and Biopython.
+A web-based bioinformatics application for analyzing genomic sequences, performing BLAST searches, and visualizing sequence data.
 
-## 🧬 Features
+## Features
 
-- Load and analyze DNA/RNA sequences from NCBI databases
-- Perform BLAST searches on protein sequences 
-- Visualize nucleotide and amino acid distributions
-- Copy full DNA/RNA sequences with one click
-- Cache BLAST search results for better performance
-- Identify top 5 proteins with length >20 amino acids
-- Dark mode UI with interactive plots
+- 🧬 Load and analyze DNA/RNA sequences from NCBI
+- 🔍 Perform BLAST searches on protein sequences
+- 📊 Visualize nucleotide and amino acid distributions
+- 📋 Copy full DNA/RNA sequences
+- 💾 Client-side caching of BLAST results
+- 🎯 Identify top 5 proteins (>20 amino acids)
 
-## 🚀 Quick Start
+## Prerequisites
 
-### Prerequisites
+- [Anaconda](https://www.anaconda.com/download) or [Miniconda](https://docs.conda.io/en/latest/miniconda.html)
+- Python 3.9+
 
+## Installation
+
+1. **Clone the repository**
 ```bash
-# Install Python 3.8+ and pip
-sudo apt-get update
-sudo apt-get install python3 python3-pip
-```
-
-### Installation
-
-```bash
-# Clone the repository
 git clone <repository-url>
-
-# Navigate to the project directory
-cd bioinformatics_notebook/Python_web_app_tool
-
-# Install required Python packages
-pip install -r requirements.txt
+cd Python_web_app_tool
 ```
 
-### Running the Application
-
+2. **Create and activate conda environment**
 ```bash
-# Run the Flask application
-export FLASK_APP=app.py
-flask run
+# Create environment from yml file
+conda env create -f environment.yml
+
+# Activate the environment
+conda activate genome_analyzer
 ```
 
-### Accessing the Application
+## Configuration
 
-Open your web browser and go to `http://127.0.0.1:5000` to access the Genome Analysis Web Tool.
-
-## 📂 Project Structure
-
-```
-bioinformatics_notebook/
-│
-├── Python_web_app_tool/
-│   ├── app.py
-│   ├── requirements.txt
-│   ├── static/
-│   ├── templates/
-│   └── README.md
-
+1. **Set up NCBI email and API key**
+Update `utils/blast.py`:
+```python
+Entrez.email = "your_email@example.com"  # Required by NCBI
+Entrez.api_key = "your_api_key"          # Optional, but recommended
 ```
 
-## 🛠️ Technologies Used
+## Usage
 
-- Flask
-- Biopython
-- HTML/CSS/JavaScript
-- Bootstrap
-- jQuery
-## 🔧 Troubleshooting
-Common issues and solutions:
+1. **Activate conda environment (if not already activated)**
+```bash
+conda activate genome_analyzer
+```
 
-BLAST Search Fails: Check internet connection and NCBI credentials
-Loading Issues: Ensure all dependencies are installed
-Display Problems: Clear browser cache if plots don't show
+2. **Start the application**
+```bash
+python app.py
+```
 
-## 👥 Contributing
-Contributions are welcome! Please read our contributing guidelines and submit pull requests.
+3. **Access the web interface**
+- Open your browser and navigate to `http://localhost:5000`
 
-## 📄 License
-Under [MIT]  License
+4. **Upload sequence IDs**
+- Create a text file with NCBI sequence IDs (one per line)
+- Click "Choose File" and select your file
+- Click "Upload" to process sequences
 
-📮 Contact
-For support or queries: 
+5. **Analyze Results**
+- View sequence details (DNA, RNA, protein)
+- Click on DNA/RNA sequences to view full sequence
+- Use "Copy" buttons to copy sequences
+- View amino acid counts
+- Select proteins for BLAST search
+- View distribution plots
 
-Create an issue on GitHub
-Email: [chrissanthis@gmai.com]
-Project Link: [repository-url]
+## Directory Structure
+
+```
+/Python_web_app_tool/
+├── templates/          # HTML templates
+├── static/            # CSS and static files
+├── utils/             # Python utility modules
+├── uploads/           # Uploaded sequence files
+├── cache/             # BLAST results cache
+└── app.py            # Flask application
+```
+
+## Example Input File
+
+```text
+MN908947    # Example sequence ID
+NC_001722.1 # Example sequence ID
+```
+
+## Notes
+
+- BLAST searches are cached to improve performance
+- Timeout set to 60 seconds for BLAST searches
+- Plots are generated for nucleotide and amino acid distributions
+- Top 5 proteins are filtered to include only those >20 amino acids
+
+## Troubleshooting
+
+- If BLAST search fails, verify your internet connection
+- For "$ is not defined" errors, check if jQuery is properly loaded
+- Ensure all conda dependencies are installed correctly
+- Check NCBI email and API key configuration
+
+## Deactivating the Environment
+
+When you're done working with the tool:
+```bash
+conda deactivate
+```
+
+## License
+
+[Your License Here]
+
+## Contributors
+
+[Your Name/Team]
+
+## Contact
+
+For issues and support, please [create an issue](repository-issues-url) or contact [your-email].

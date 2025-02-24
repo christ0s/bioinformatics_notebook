@@ -55,9 +55,9 @@
         return;
       }
 
-      // Setup timeout with AbortController (60 sec).
+      // Setup timeout with AbortController (600 sec).
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 60000);
+      const timeoutId = setTimeout(() => controller.abort(), 600000);
 
       fetch('/blast_search', {
         method: 'POST',
