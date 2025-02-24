@@ -1,6 +1,7 @@
 # Cache directory
 
 /cache/*
+/cache/pdb_structures/*
 
 # Uploads directory
 
@@ -28,3 +29,4 @@ env/
 
 # Log files
 *.log
+*.pdb

@@ -1,4 +1,3 @@
-import logging
 import os
 from flask import Flask, render_template, request, jsonify, send_file
 import requests
@@ -9,13 +8,6 @@ from utils.fetch import read_sequence_ids, fetch_sequences_from_ncbi
 from utils.process import process_sequences, extract_top_proteins
 from utils.blast import run_blast_search  # Use Biopython qblast here
 from utils.structure import ProteinStructureHandler
-
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 app.config.update(
@@ -72,38 +64,47 @@ def blast_search():
 
 @app.route("/get_protein_structure/<pdb_id>", methods=["GET"])
 def get_protein_structure(pdb_id):
-    logger.info(f"Received request for protein structure: {pdb_id}")
+    print(f"[DEBUG] Fetching structure for PDB ID: {pdb_id}")
     try:
-        structure_info = structure_handler.fetch_structure(pdb_id)
-        logger.info(f"Successfully retrieved structure info for {pdb_id}")
+        pdb_file = os.path.join(PDB_CACHE_DIR, f"{pdb_id.upper()}.pdb")
+        
+        # Download PDB file if not in cache
+        if not os.path.exists(pdb_file):
+            print(f"[DEBUG] Downloading PDB file from RCSB")
+            url = f"https://files.rcsb.org/download/{pdb_id.upper()}.pdb"
+            response = requests.get(url)
+            
+            if response.status_code != 200:
+                raise Exception(f"Failed to download PDB file: {response.status_code}")
+            
+            # Save PDB file
+            with open(pdb_file, 'wb') as f:
+                f.write(response.content)
+            print(f"[DEBUG] PDB file saved to {pdb_file}")
+        
+        structure_info = {
+            'pdb_id': pdb_id,
+            'file_path': pdb_file
+        }
         return jsonify(structure_info)
+        
     except Exception as e:
-        logger.error(f"Error getting protein structure for {pdb_id}: {str(e)}", exc_info=True)
+        print(f"[ERROR] {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 @app.route("/pdb/<pdb_id>", methods=["GET"])
 def serve_pdb_file(pdb_id):
-    logger.info(f"Received request to serve PDB file: {pdb_id}")
+    print(f"[DEBUG] Serving PDB file for ID: {pdb_id}")
     try:
         pdb_file = os.path.join(PDB_CACHE_DIR, f"{pdb_id.upper()}.pdb")
-        logger.info(f"Looking for PDB file at: {pdb_file}")
-        
         if not os.path.exists(pdb_file):
-            logger.info(f"PDB file not found in cache, downloading from RCSB")
             url = f"https://files.rcsb.org/download/{pdb_id.upper()}.pdb"
-            logger.info(f"Downloading from URL: {url}")
-            
             response = requests.get(url)
             if response.status_code != 200:
-                error_msg = f"Failed to download PDB file: {response.status_code}"
-                logger.error(error_msg)
-                raise Exception(error_msg)
-            
-            logger.info(f"Successfully downloaded PDB file, saving to: {pdb_file}")
+                raise Exception(f"Failed to download PDB file: {response.status_code}")
             with open(pdb_file, 'wb') as f:
                 f.write(response.content)
-        
-        logger.info(f"Serving PDB file: {pdb_file}")
+            print(f"[DEBUG] PDB file saved successfully")
         return send_file(
             pdb_file,
             mimetype='chemical/x-pdb',
@@ -111,9 +112,8 @@ def serve_pdb_file(pdb_id):
             download_name=f"{pdb_id.upper()}.pdb"
         )
     except Exception as e:
-        error_msg = f"Error serving PDB file {pdb_id}: {str(e)}"
-        logger.error(error_msg, exc_info=True)
-        return jsonify({'error': error_msg}), 500
+        print(f"[ERROR] {str(e)}")
+        return jsonify({'error': str(e)}), 500
 
 @app.route("/", methods=["GET", "POST"])
 def home():

@@ -31,6 +31,11 @@ conda env create -f environment.yml
 
 # Activate the environment
 conda activate genome_analyzer
+
+# Remove existing environment
+conda deactivate
+conda env remove -n genome_analyzer
+
 ```
 
 ## Configuration

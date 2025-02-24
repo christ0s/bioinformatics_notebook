@@ -169,3 +169,15 @@ form input[type="submit"]:hover {
 }
 
 /* Optionally add further custom styling for buttons, modals, etc. */
+.modal-backdrop {
+    opacity: 0.5 !important;
+}
+
+.modal-content {
+    background-color: #343a40;
+    color: white;
+}
+
+.btn-close {
+    filter: invert(1) grayscale(100%) brightness(200%);
+}
