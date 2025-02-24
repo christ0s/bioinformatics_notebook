@@ -83,37 +83,30 @@ def get_protein_structure(pdb_id):
 
 @app.route("/pdb/<pdb_id>", methods=["GET"])
 def serve_pdb_file(pdb_id):
-    logger.info(f"Received request to serve PDB file: {pdb_id}")
+    logger.info(f"[DEBUG] Serving PDB file for ID: {pdb_id}")
     try:
-        pdb_file = os.path.join(PDB_CACHE_DIR, f"{pdb_id.upper()}.pdb")
-        logger.info(f"Looking for PDB file at: {pdb_file}")
+        pdb_file = os.path.join(app.config['CACHE_FOLDER'], 'pdb_structures', f"{pdb_id.upper()}.pdb")
         
         if not os.path.exists(pdb_file):
-            logger.info(f"PDB file not found in cache, downloading from RCSB")
+            logger.info(f"[DEBUG] Downloading PDB file for {pdb_id}")
             url = f"https://files.rcsb.org/download/{pdb_id.upper()}.pdb"
-            logger.info(f"Downloading from URL: {url}")
-            
             response = requests.get(url)
             if response.status_code != 200:
-                error_msg = f"Failed to download PDB file: {response.status_code}"
-                logger.error(error_msg)
-                raise Exception(error_msg)
+                raise Exception(f"Failed to download PDB file: {response.status_code}")
             
-            logger.info(f"Successfully downloaded PDB file, saving to: {pdb_file}")
+            os.makedirs(os.path.dirname(pdb_file), exist_ok=True)
             with open(pdb_file, 'wb') as f:
                 f.write(response.content)
+            logger.info(f"[DEBUG] Saved PDB file to {pdb_file}")
         
-        logger.info(f"Serving PDB file: {pdb_file}")
         return send_file(
             pdb_file,
-            mimetype='chemical/x-pdb',
-            as_attachment=True,
-            download_name=f"{pdb_id.upper()}.pdb"
+            mimetype='text/plain',
+            as_attachment=False
         )
     except Exception as e:
-        error_msg = f"Error serving PDB file {pdb_id}: {str(e)}"
-        logger.error(error_msg, exc_info=True)
-        return jsonify({'error': error_msg}), 500
+        logger.error(f"[ERROR] Failed to serve PDB: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 
 @app.route("/", methods=["GET", "POST"])
 def home():

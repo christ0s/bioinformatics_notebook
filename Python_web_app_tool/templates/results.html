@@ -25,7 +25,7 @@
         }
         /* Modal and viewport styles */
         .modal-xl {
-            max-width: 90% !important;
+            max-width: 95% !important;
         }
         
         .modal-content {
@@ -51,13 +51,23 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
+            z-index: 1000;
+        }
+
+        .btn-group .btn {
+            color: #fff;
+            border-color: #6c757d;
+        }
+
+        .btn-group .btn:hover {
+            background-color: #6c757d;
         }
     </style>
     
     <!-- Required Scripts -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://unpkg.com/ngl@2.0.0-dev.37/dist/ngl.js"></script>
+    <script src="https://3Dmol.csb.pitt.edu/build/3Dmol-min.js"></script>
 
     <script>
         // Client-side cache for BLAST results
@@ -136,6 +146,9 @@
         }
 
         // Protein visualization functions
+        let currentStage = null;
+        let currentComponent = null;
+
         function visualizeProtein(pdbId, viewportId) {
             console.log(`[DEBUG] Starting visualization for PDB ID: ${pdbId} in viewport: ${viewportId}`);
             
@@ -145,68 +158,106 @@
                 return;
             }
             
-            viewport.innerHTML = '<div class="spinner-border text-light" role="status"><span class="visually-hidden">Loading...</span></div>';
+            // Clear previous content
+            viewport.innerHTML = '';
             
-            try {
-                // Create NGL Stage
-                const stage = new NGL.Stage(viewportId, { backgroundColor: "white" });
-                window.addEventListener('resize', () => stage.handleResize(), false);
-                
-                console.log(`[DEBUG] Loading structure from local server: ${pdbId}`);
-                
-                // Changed: Add format specification
-                stage.loadFile(`/pdb/${pdbId}`, {
-                    ext: "pdb",
-                    defaultRepresentation: false,
-                    firstModelOnly: true
-                })
-                .then(component => {
-                    console.log('[DEBUG] Structure loaded successfully');
-                    // Add cartoon representation
-                    component.addRepresentation("cartoon", {
-                        color: "chainid"
+            // Initialize 3Dmol viewer
+            let viewer = $3Dmol.createViewer(viewport, {
+                defaultcolors: $3Dmol.rasmolElementColors,
+                backgroundColor: 'white'
+            });
+            
+            // Show loading indicator
+            viewer.render(); // Initial render of empty scene
+            
+            // Fetch and display structure
+            fetch(`/pdb/${pdbId}`)
+                .then(response => response.text())
+                .then(data => {
+                    console.log('[DEBUG] PDB data received, creating model');
+                    
+                    // Load PDB data
+                    viewer.addModel(data, "pdb");
+                    
+                    // Set initial style
+                    viewer.setStyle({}, {cartoon: {color: 'spectrum'}});
+                    
+                    // Add surface representation for hetero atoms
+                    viewer.addSurface($3Dmol.SurfaceType.VDW, {
+                        opacity:0.7,
+                        color:'white'
                     });
-                    // Add ball and stick for ligands
-                    component.addRepresentation("ball+stick", {
-                        sele: "hetero and not water",
-                        color: "element"
-                    });
-                    // Center and zoom
-                    component.autoView();
+                    
+                    // Zoom to fit
+                    viewer.zoomTo();
+                    
+                    // Final render
+                    viewer.render();
                     console.log('[DEBUG] Visualization complete');
                 })
                 .catch(error => {
                     console.error('[ERROR] Failed to load structure:', error);
                     viewport.innerHTML = `<div class="alert alert-danger">Error loading structure: ${error.message}</div>`;
                 });
-            } catch (error) {
-                console.error('[ERROR] Error creating NGL Stage:', error);
-                viewport.innerHTML = `<div class="alert alert-danger">Error creating viewer: ${error.message}</div>`;
+                
+            return viewer; // Return viewer for representation changes
+        }
+
+        // Update representation change function
+        function changeRepresentation(type) {
+            const viewer = document.viewer; // Store viewer reference
+            if (!viewer) return;
+            
+            console.log(`[DEBUG] Changing representation to: ${type}`);
+            
+            viewer.removeAllModels();
+            viewer.removeAllSurfaces();
+            
+            switch(type) {
+                case 'cartoon':
+                    viewer.setStyle({}, {cartoon: {color: 'spectrum'}});
+                    break;
+                case 'ball+stick':
+                    viewer.setStyle({}, {stick: {}, sphere: {scale: 0.3}});
+                    break;
+                case 'surface':
+                    viewer.setStyle({}, {cartoon: {color: 'white'}});
+                    viewer.addSurface($3Dmol.SurfaceType.VDW, {
+                        opacity:0.7,
+                        color:'spectrum'
+                    });
+                    break;
             }
+            
+            viewer.render();
+            console.log('[DEBUG] Representation changed');
         }
 
         function showProteinVisualization(index, pdbId) {
-            console.log(`[DEBUG] Opening modal for PDB ID: ${pdbId}`);
-            const modalElement = document.getElementById(`proteinVisualizationModal-${index}`);
+            const modal = new bootstrap.Modal(document.getElementById(`proteinVisualizationModal-${index}`));
             
-            if (!modalElement) {
-                console.error(`[ERROR] Modal element not found for index: ${index}`);
-                return;
-            }
-            
-            const modal = new bootstrap.Modal(modalElement);
-            
-            // Remove existing event listeners
-            modalElement.replaceWith(modalElement.cloneNode(true));
-            
-            // Get fresh reference after cloning
-            const freshModal = document.getElementById(`proteinVisualizationModal-${index}`);
-            
-            freshModal.addEventListener('shown.bs.modal', function () {
-                console.log(`[DEBUG] Modal shown, initializing visualization for ${pdbId}`);
-                visualizeProtein(pdbId, `viewport-${index}`);
+            // Add event listener for when modal is shown
+            document.getElementById(`proteinVisualizationModal-${index}`).addEventListener('shown.bs.modal', function () {
+                let viewer = $3Dmol.createViewer(`viewport-${index}`, {
+                    backgroundColor: "white"
+                });
+
+                // Load PDB file from our backend
+                fetch(`/pdb/${pdbId}`)
+                    .then(response => response.text())
+                    .then(pdbData => {
+                        viewer.addModel(pdbData, "pdb");
+                        viewer.setStyle({}, { cartoon: { color: 'spectrum' } });
+                        viewer.zoomTo();
+                        viewer.render();
+                    })
+                    .catch(error => {
+                        console.error("Error loading PDB:", error);
+                        document.getElementById(`viewport-${index}`).innerHTML = 
+                            `<div class="alert alert-danger">Error loading structure: ${error.message}</div>`;
+                    });
             });
-            
+
             modal.show();
         }
 
@@ -402,24 +453,21 @@
       </div>
 
       <!-- Protein Visualization Modal -->
-      <div class="modal fade" id="proteinVisualizationModal-{{ res_index }}" 
-           tabindex="-1" aria-labelledby="proteinVisualizationModalLabel-{{ res_index }}" aria-hidden="true">
-        <div class="modal-dialog modal-xl">
-          <div class="modal-content bg-dark">
-            <div class="modal-header">
-              <h5 class="modal-title text-light" id="proteinVisualizationModalLabel-{{ res_index }}">
-                3D Protein Structure Viewer
-              </h5>
-              <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body p-0">
-                <!-- Important: Set explicit dimensions and background -->
-                <div id="viewport-{{ res_index }}" 
-                     style="width:100%; height:600px; background-color: white; position: relative;">
-                </div>
-            </div>
+      <div class="modal fade" id="proteinVisualizationModal-{{ res_index }}" tabindex="-1" aria-labelledby="proteinVisualizationModalLabel-{{ res_index }}" aria-hidden="true">
+          <div class="modal-dialog modal-xl">
+              <div class="modal-content">
+                  <div class="modal-header">
+                      <h5 class="modal-title">Protein Structure - {{ result.id }}</h5>
+                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                  </div>
+                  <div class="modal-body">
+                      <div id="viewport-{{ res_index }}" style="width: 100%; height: 500px; position: relative;"></div>
+                  </div>
+                  <div class="modal-footer">
+                      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                  </div>
+              </div>
           </div>
-        </div>
       </div>
       {% endfor %}
     </div>
