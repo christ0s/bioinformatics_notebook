@@ -2,7 +2,7 @@ from Bio import Entrez,SeqIO, SearchIO
 from Bio.Blast import NCBIWWW
 import os
 import pickle
-Entrez.email = "your_email@example.com"  # Required by NCBI
+Entrez.email = "your_email@example.com"  # Optional by NCBI
 Entrez.api_key = "ceaa76cc578dc1673192930863df8bd6cc08"  # Set API key globally
 
 def run_blast_search(fasta_file):

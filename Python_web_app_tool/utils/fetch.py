@@ -2,7 +2,7 @@ from Bio import Entrez, SeqIO
 import logging
 
 # NCBI configuration
-Entrez.email = "btc.cchrys@gmail.com"  # Replace with your actual email
+Entrez.email = "your_email@example.com"  # Replace with your actual email
 
 def read_sequence_ids(file_path):
     """Read sequence IDs from a file."""
