@@ -88,7 +88,8 @@
         <!-- Main Content -->
         <div class="container-fluid p-4 main-content">
             {% for result in results %}
-            <div id="info-{{ loop.index }}" class="card bg-secondary text-light p-3 mb-4 shadow-lg info-section">
+            {% set res_index = loop.index %}
+            <div id="info-{{ res_index }}" class="card bg-secondary text-light p-3 mb-4 shadow-lg info-section">
                 <div class="card-body">
                     <h3 class="card-title">Sequence ID: {{ result.id }}</h3>
                     <p><strong>Genome Name:</strong> {{ result.genome_name }}</p>
@@ -97,35 +98,44 @@
                     <p><strong>Protein:</strong> {{ result.protein[:50] }}...</p>
                     <p><strong>GC Content:</strong> {{ result.gc_content }}%</p>
                     <p><strong>Total Amino Acids:</strong> {{ result.total_amino_acids }}</p>
-                    <p onclick="toggleVisibility('amino-acids-{{ loop.index }}')" style="cursor: pointer; text-decoration: underline;">
+                    <p onclick="toggleVisibility('amino-acids-{{ res_index }}')" style="cursor: pointer; text-decoration: underline;">
                         Show Amino Acid Counts
                     </p>
-                    <ul id="amino-acids-{{ loop.index }}" style="display: none;">
+                    <ul id="amino-acids-{{ res_index }}" style="display: none;">
                         {% for aa, count in result.amino_acid_counts %}
                         <li><strong>{{ aa }}:</strong> {{ count }}</li>
                         {% endfor %}
                     </ul>
                     <p><strong>Top 5 Protein Sequences:</strong></p>
-                    <ul>
+                    <fieldset>
                         {% for protein in result.top_long_proteins %}
-                        <li>
-                            <input type="radio" name="protein_sequence_{{ loop.index }}" value="{{ protein }}">
-                            {{ protein[:50] }}
-                        </li>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" 
+                                   name="protein_sequence_{{ res_index }}" 
+                                   id="protein_{{ res_index }}_{{ loop.index }}" 
+                                   value="{{ protein }}">
+                            <label class="form-check-label text-light" for="protein_{{ res_index }}_{{ loop.index }}">
+                                {{ protein[:50] }}...
+                            </label>
+                        </div>
                         {% endfor %}
-                    </ul>
-                    <button class="btn btn-warning mt-3" onclick="performBlastSearch( {{ loop.index }} )">Perform BLAST Search</button>
-                    <div id="blast-results-{{ loop.index }}" class="mt-3"></div>
-                    <button class="btn btn-info mt-3" onclick="showModal( {{ loop.index }} )">Show Plots</button>
+                    </fieldset>
+                    <button class="btn btn-warning mt-3" onclick="performBlastSearch({{ res_index }})">
+                        Perform BLAST Search
+                    </button>
+                    <div id="blast-results-{{ res_index }}" class="mt-3"></div>
+                    <button class="btn btn-info mt-3" onclick="showModal({{ res_index }})">
+                        Show Plots
+                    </button>
                 </div>
             </div>
 
             <!-- Modal -->
-            <div class="modal fade" id="plotModal-{{ loop.index }}" tabindex="-1" role="dialog" aria-labelledby="plotModalLabel-{{ loop.index }}" aria-hidden="true">
+            <div class="modal fade" id="plotModal-{{ res_index }}" tabindex="-1" role="dialog" aria-labelledby="plotModalLabel-{{ res_index }}" aria-hidden="true">
                 <div class="modal-dialog modal-xl" role="document">
                     <div class="modal-content">
                         <div class="modal-header">
-                            <h5 class="modal-title" id="plotModalLabel-{{ loop.index }}">Plots for {{ result.id }}</h5>
+                            <h5 class="modal-title" id="plotModalLabel-{{ res_index }}">Plots for {{ result.id }}</h5>
                             <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                                 <span aria-hidden="true">&times;</span>
                             </button>
