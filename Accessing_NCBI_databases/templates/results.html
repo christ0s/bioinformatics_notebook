@@ -1,164 +1,285 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Genome Analyzer</title>
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
-    <script>
-        function toggleVisibility(id) {
-            const element = document.getElementById(id);
-            element.style.display = element.style.display === "none" ? "block" : "none";
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Genome Analyzer</title>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  <script>
+    // Client-side cache for BLAST results.
+    const blastCache = {};
+
+    function toggleVisibility(id) {
+      const element = document.getElementById(id);
+      element.style.display = element.style.display === "none" ? "block" : "none";
+    }
+
+    function renderBlastResults(index, data) {
+      const blastResultsContainer = document.getElementById(`blast-results-${index}`);
+      blastResultsContainer.innerHTML = ''; // Clear previous results
+      data.forEach(result => {
+        const resultElement = document.createElement('div');
+        resultElement.innerHTML = `
+          <p><strong>Sequence ID:</strong> ${result['Sequence ID']}</p>
+          <p><strong>Description:</strong> ${result['Description']}</p>
+          <p><strong>E-value:</strong> ${result['E-value']}</p>
+          <p><strong>Bit Score:</strong> ${result['Bit Score']}</p>
+          <p><strong>Alignment:</strong>\n ${result['Alignment']}</p>
+        `;
+        blastResultsContainer.appendChild(resultElement);
+      });
+    }
+
+    function performBlastSearch(index) {
+      // Get the selected protein sequence (radio button is grouped per result).
+      const selectedProtein = document.querySelector(`input[name="protein_sequence_${index}"]:checked`);
+      if (!selectedProtein) {
+        alert('Please select a protein sequence for BLAST search.');
+        return;
+      }
+      const proteinSequence = selectedProtein.value;
+      const blastResultsContainer = document.getElementById(`blast-results-${index}`);
+
+      // Show a loading spinner message.
+      blastResultsContainer.innerHTML = '<div class="text-center"><div class="spinner-border text-light" role="status"><span class="sr-only">Loading...</span></div></div>';
+
+      // Check client-side cache.
+      if (blastCache[proteinSequence]) {
+        console.log(`Using cached results for: ${proteinSequence}`);
+        renderBlastResults(index, blastCache[proteinSequence]);
+        return;
+      }
+
+      // Setup timeout with AbortController (60 sec).
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 6000000);
+
+      fetch('/blast_search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ protein_sequence: proteinSequence }),
+        signal: controller.signal
+      })
+      .then(response => response.json())
+      .then(data => {
+        clearTimeout(timeoutId);
+        if (data.error) {
+          console.error('Error:', data.error);
+          alert('Error: ' + data.error);
+        } else {
+          blastCache[proteinSequence] = data;
+          renderBlastResults(index, data);
         }
-
-        function performBlastSearch(index) {
-            const selectedProtein = document.querySelector(`input[name="protein_sequence_${index}"]:checked`);
-            if (!selectedProtein) {
-                alert('Please select a protein sequence for BLAST search.');
-                return;
-            }
-
-            const proteinSequence = selectedProtein.value;
-
-            fetch('/blast_search', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ protein_sequence: proteinSequence })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.error) {
-                    console.error('Error:', data.error);
-                    alert('Error: ' + data.error);
-                } else {
-                    console.log('Success:', data);
-                    // Update the DOM with the BLAST results
-                    const blastResultsContainer = document.getElementById(`blast-results-${index}`);
-                    blastResultsContainer.innerHTML = ''; // Clear previous results
-                    data.forEach(result => {
-                        const resultElement = document.createElement('div');
-                        resultElement.innerHTML = `
-                            <p><strong>Sequence ID:</strong> ${result['Sequence ID']}</p>
-                            <p><strong>Description:</strong> ${result['Description']}</p>
-                            <p><strong>E-value:</strong> ${result['E-value']}</p>
-                            <p><strong>Bit Score:</strong> ${result['Bit Score']}</p>
-                            <p><strong>Alignment:</strong> ${result['Alignment']}</p>
-                        `;
-                        blastResultsContainer.appendChild(resultElement);
-                    });
-                }
-            })
-            .catch((error) => {
-                console.error('Error:', error);
-                alert('An error occurred while performing the BLAST search.');
-            });
+      })
+      .catch((error) => {
+        clearTimeout(timeoutId);
+        if (error.name === 'AbortError') {
+          alert('The BLAST search timed out. Please try again later.');
+        } else {
+          console.error('Error:', error);
+          alert('An error occurred while performing the BLAST search.');
         }
+      });
+    }
 
-        function showModal(index) {
-            const modal = document.getElementById(`plotModal-${index}`);
-            const modalInstance = new bootstrap.Modal(modal);
-            modalInstance.show();
-        }
-    </script>
+    function showModal(index) {
+      const modal = document.getElementById(`plotModal-${index}`);
+      const modalInstance = new bootstrap.Modal(modal);
+      modalInstance.show();
+    }
+
+    // DNA Modal Functions
+    function showDNAModal(index, dna) {
+      var textArea = document.getElementById(`dnaTextArea-${index}`);
+      textArea.value = dna;
+      var dnaModalElem = document.getElementById(`dnaModal-${index}`);
+      var dnaModal = new bootstrap.Modal(dnaModalElem);
+      dnaModal.show();
+    }
+
+    function copyDNA(index) {
+      const textArea = document.getElementById(`dnaTextArea-${index}`);
+      textArea.select();
+      textArea.setSelectionRange(0, 99999);
+      document.execCommand("copy");
+      alert("DNA copied to clipboard!");
+    }
+
+    // RNA Modal Functions (implemented similar to DNA)
+    function showRNAModal(index, rna) {
+      var textArea = document.getElementById(`rnaTextArea-${index}`);
+      textArea.value = rna;
+      var rnaModalElem = document.getElementById(`rnaModal-${index}`);
+      var rnaModal = new bootstrap.Modal(rnaModalElem);
+      rnaModal.show();
+    }
+
+    function copyRNA(index) {
+      const textArea = document.getElementById(`rnaTextArea-${index}`);
+      textArea.select();
+      textArea.setSelectionRange(0, 99999);
+      document.execCommand("copy");
+      alert("RNA copied to clipboard!");
+    }
+  </script>
+  <script>
+    $(function () {
+      $('[data-toggle="tooltip"]').tooltip();
+    });
+  </script>
 </head>
 <body class="bg-dark text-light">
-    <div class="d-flex">
-        <!-- Sidebar Navigation -->
-        <nav class="navbar navbar-expand-lg navbar-dark bg-secondary flex-column vh-100 p-3 shadow-lg">
-            <div class="d-flex flex-column w-100">
-                <a class="navbar-brand text-light font-weight-bold" href="#">Genomes SEN</a>
-                <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="collapse navbar-collapse" id="navbarNav">
-                    <div class="navbar-nav flex-column">
-                        {% for result in results %}
-                            <div class="nav-item">
-                                <a class="nav-link text-light" href="#info-{{ loop.index }}">{{ result.id.split('.')[0] }}</a>
-                            </div>
-                        {% endfor %}
-                    </div>
-                </div>
-            </div>
-        </nav>
-
-        <!-- Main Content -->
-        <div class="container-fluid p-4 main-content">
+  <div class="d-flex">
+    <!-- Sidebar Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-secondary flex-column vh-100 p-3 shadow-lg">
+      <div class="d-flex flex-column w-100">
+        <a class="navbar-brand text-light font-weight-bold" href="#">Genomes SEN</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+          <div class="navbar-nav flex-column">
             {% for result in results %}
-            {% set res_index = loop.index %}
-            <div id="info-{{ res_index }}" class="card bg-secondary text-light p-3 mb-4 shadow-lg info-section">
-                <div class="card-body">
-                    <h3 class="card-title">Sequence ID: {{ result.id }}</h3>
-                    <p><strong>Genome Name:</strong> {{ result.genome_name }}</p>
-                    <p><strong>DNA:</strong> {{ result.dna[:50] }}...</p>
-                    <p><strong>RNA:</strong> {{ result.rna[:50] }}...</p>
-                    <p><strong>Protein:</strong> {{ result.protein[:50] }}...</p>
-                    <p><strong>GC Content:</strong> {{ result.gc_content }}%</p>
-                    <p><strong>Total Amino Acids:</strong> {{ result.total_amino_acids }}</p>
-                    <p onclick="toggleVisibility('amino-acids-{{ res_index }}')" style="cursor: pointer; text-decoration: underline;">
-                        Show Amino Acid Counts
-                    </p>
-                    <ul id="amino-acids-{{ res_index }}" style="display: none;">
-                        {% for aa, count in result.amino_acid_counts %}
-                        <li><strong>{{ aa }}:</strong> {{ count }}</li>
-                        {% endfor %}
-                    </ul>
-                    <p><strong>Top 5 Protein Sequences:</strong></p>
-                    <fieldset>
-                        {% for protein in result.top_long_proteins %}
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" 
-                                   name="protein_sequence_{{ res_index }}" 
-                                   id="protein_{{ res_index }}_{{ loop.index }}" 
-                                   value="{{ protein }}">
-                            <label class="form-check-label text-light" for="protein_{{ res_index }}_{{ loop.index }}">
-                                {{ protein[:50] }}...
-                            </label>
-                        </div>
-                        {% endfor %}
-                    </fieldset>
-                    <button class="btn btn-warning mt-3" onclick="performBlastSearch({{ res_index }})">
-                        Perform BLAST Search
-                    </button>
-                    <div id="blast-results-{{ res_index }}" class="mt-3"></div>
-                    <button class="btn btn-info mt-3" onclick="showModal({{ res_index }})">
-                        Show Plots
-                    </button>
-                </div>
-            </div>
-
-            <!-- Modal -->
-            <div class="modal fade" id="plotModal-{{ res_index }}" tabindex="-1" role="dialog" aria-labelledby="plotModalLabel-{{ res_index }}" aria-hidden="true">
-                <div class="modal-dialog modal-xl" role="document">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title" id="plotModalLabel-{{ res_index }}">Plots for {{ result.id }}</h5>
-                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                <span aria-hidden="true">&times;</span>
-                            </button>
-                        </div>
-                        <div class="modal-body d-flex justify-content-between">
-                            <div class="plot-section">
-                                {{ result.nucleotide_distribution|safe }}
-                            </div>
-                            <div class="plot-section">
-                                {{ result.amino_acid_distribution|safe }}
-                            </div>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                        </div>
-                    </div>
-                </div>
+            <div class="nav-item">
+              <a class="nav-link text-light" href="#info-{{ loop.index }}">{{ result.id.split('.')[0] }}</a>
             </div>
             {% endfor %}
+          </div>
         </div>
+      </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container-fluid p-4 main-content">
+      {% for result in results %}
+      {% set res_index = loop.index %}
+      <div id="info-{{ res_index }}" class="card bg-secondary text-light p-3 mb-4 shadow-lg info-section">
+        <div class="card-body">
+          <h3 class="card-title">Sequence ID: {{ result.id }}</h3>
+          <p><strong>Genome Name:</strong> {{ result.genome_name }}</p>
+          <p>
+            <strong>DNA:</strong>
+            <span class="dna-text clickable" style="cursor: pointer; text-decoration: underline;" onclick="showDNAModal({{ res_index }}, '{{ result.dna|e }}')">
+              {{ result.dna[:50] }}...
+            </span>
+          </p>
+          <p>
+            <strong>RNA:</strong>
+            <span class="rna-text clickable" style="cursor: pointer; text-decoration: underline;" onclick="showRNAModal({{ res_index }}, '{{ result.rna|e }}')">
+              {{ result.rna[:50] }}...
+            </span>
+          </p>
+          <p><strong>Protein:</strong> {{ result.protein[:50] }}...</p>
+          <p><strong>GC Content:</strong> {{ result.gc_content }}%</p>
+          <p><strong>Total Amino Acids:</strong> {{ result.total_amino_acids }}</p>
+          <p onclick="toggleVisibility('amino-acids-{{ res_index }}')" style="cursor: pointer; text-decoration: underline;">
+            Show Amino Acid Counts
+          </p>
+          <ul id="amino-acids-{{ res_index }}" style="display: none;">
+            {% for aa, count in result.amino_acid_counts %}
+            <li><strong>{{ aa }}:</strong> {{ count }}</li>
+            {% endfor %}
+          </ul>
+          <p>
+            <strong data-toggle="tooltip" data-placement="top" title="The top 5 proteins with greater 20 aminoacids">
+              Top 5 Protein Sequences:
+            </strong>
+          </p>
+          <fieldset>
+            {% for protein in result.top_long_proteins %}
+            <div class="form-check">
+              <input class="form-check-input" type="radio" 
+                     name="protein_sequence_{{ res_index }}" 
+                     id="protein_{{ res_index }}_{{ loop.index }}" 
+                     value="{{ protein }}">
+              <label class="form-check-label text-light" for="protein_{{ res_index }}_{{ loop.index }}">
+                {{ protein[:50] }}...
+              </label>
+            </div>
+            {% endfor %}
+          </fieldset>
+          <button class="btn btn-warning mt-3" onclick="performBlastSearch({{ res_index }})">
+            Perform BLAST Search
+          </button>
+          <div id="blast-results-{{ res_index }}" class="mt-3"></div>
+          <button class="btn btn-info mt-3" onclick="showModal({{ res_index }})">
+            Show Plots
+          </button>
+        </div>
+      </div>
+
+      <!-- Plot Modal -->
+      <div class="modal fade" id="plotModal-{{ res_index }}" tabindex="-1" role="dialog" aria-labelledby="plotModalLabel-{{ res_index }}" aria-hidden="true">
+        <div class="modal-dialog modal-xl" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="plotModalLabel-{{ res_index }}">Plots for {{ result.id }}</h5>
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+            <div class="modal-body d-flex justify-content-between">
+              <div class="plot-section">
+                {{ result.nucleotide_distribution|safe }}
+              </div>
+              <div class="plot-section">
+                {{ result.amino_acid_distribution|safe }}
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DNA Modal -->
+      <div class="modal fade" id="dnaModal-{{ res_index }}" tabindex="-1" role="dialog" aria-labelledby="dnaModalLabel-{{ res_index }}" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+          <div class="modal-content bg-secondary text-light">
+            <div class="modal-header">
+              <h5 class="modal-title" id="dnaModalLabel-{{ res_index }}">Full DNA Sequence for {{ result.id }}</h5>
+              <button type="button" class="close text-light" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+            <div class="modal-body">
+              <textarea id="dnaTextArea-{{ res_index }}" class="form-control" rows="10" readonly></textarea>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-info" onclick="copyDNA({{ res_index }})">Copy DNA</button>
+              <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RNA Modal -->
+      <div class="modal fade" id="rnaModal-{{ res_index }}" tabindex="-1" role="dialog" aria-labelledby="rnaModalLabel-{{ res_index }}" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+          <div class="modal-content bg-secondary text-light">
+            <div class="modal-header">
+              <h5 class="modal-title" id="rnaModalLabel-{{ res_index }}">Full RNA Sequence for {{ result.id }}</h5>
+              <button type="button" class="close text-light" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+            <div class="modal-body">
+              <textarea id="rnaTextArea-{{ res_index }}" class="form-control" rows="10" readonly></textarea>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-info" onclick="copyRNA({{ res_index }})">Copy RNA</button>
+              <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
     </div>
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+  </div>
+  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 </body>
 </html>
