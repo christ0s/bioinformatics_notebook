@@ -1,0 +1,171 @@
+/* General Page Styles */
+body {
+    font-family: 'Roboto', Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    color: #E0E0E0;
+    background-color: #121212;
+    display: flex;
+    min-height: 100vh;
+}
+
+/* Overall dark theme adjustments */
+body.bg-dark {
+  background-color: #212529 !important;
+}
+
+/* Form Styles */
+form {
+    margin-top: 20px;
+    padding: 15px;
+    background-color: #1C1C1C;
+    border: 1px solid #37474F;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    text-align: center;
+}
+
+form input[type="file"],
+form input[type="submit"] {
+    margin: 10px;
+    padding: 10px;
+    border-radius: 4px;
+    border: 1px solid #455A64;
+    background-color: #1E88E5;
+    color: #FFFFFF;
+    transition: background-color 0.3s;
+}
+
+form input[type="submit"]:hover {
+    background-color: #1565C0;
+}
+
+/* Navbar Styles */
+.navbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 180px;
+    height: 100%;
+    background-color: #1C1C1C;
+    border-right: 1px solid #37474F;
+    padding: 20px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+.navbar .navbar-nav {
+    flex-grow: 1;
+}
+
+.navbar .navbar-nav .nav-item {
+    margin-bottom: 10px;
+}
+
+.navbar h2 {
+    color: #80CBC4;
+}
+
+.navbar h3 {
+    font-size: 18px;
+    color: #82AAFF;
+}
+
+.navbar button {
+    display: inline-block;
+    margin: 0 5px 10px 0;
+    padding: 5px 8px;
+    background-color: #1E88E5;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    text-align: center;
+    transition: background-color 0.3s;
+}
+
+.navbar button:hover {
+    background-color: #1565C0;
+}
+
+/* Main Content Styles */
+.main-content {
+    margin-left: 200px; /* Adjusted to ensure it starts right next to the navbar */
+    padding: 20px;
+    flex: 1;
+}
+
+/* Main content container spacing */
+.container-fluid.main-content {
+  margin-left: 250px; /* Adjust if you need more space for the sidebar */
+}
+
+/* Info and Plot Container Styles */
+.info-plot-container {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    margin-left: 0;
+    max-width: 800px;
+}
+
+/* Info Section Styles */
+.info-section {
+    flex: 1;
+    padding: 10px;
+    border-radius: 8px;
+    background-color: #1F1F1F;
+    border: 1px solid #37474F;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.info-section p, .info-section ul {
+    margin: 0;
+}
+
+.info-section strong {
+    color: #80CBC4;
+}
+
+/* Plot Section Styles */
+.plot-section {
+    flex: 1;
+    max-width: 45%; /* Adjusted to ensure plots are side by side */
+    padding: 10px;
+    border-radius: 8px;
+    background-color: #212121;
+    border: 1px solid #455A64;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    display: block;
+    margin: 0 auto;
+    height: auto; 
+}
+
+/* Custom styles for protein list (if needed) */
+.protein-list {
+  background-color: #343a40;
+  border: 1px solid #495057;
+  border-radius: 0.25rem;
+}
+
+.protein-list .list-group-item {
+  background-color: #495057;
+  color: #ffffff;
+  border: none;
+  padding: 0.75rem 1rem;
+}
+
+.protein-list .list-group-item:hover {
+  background-color: #6c757d;
+}
+
+/* Spinner customization (if needed) */
+.spinner-border {
+  width: 3rem;
+  height: 3rem;
+}
+
+/* Optionally add further custom styling for buttons, modals, etc. */

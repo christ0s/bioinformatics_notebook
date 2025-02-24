@@ -1,0 +1,30 @@
+# Cache directory
+
+/cache/*
+
+# Uploads directory
+
+/uploads/*
+
+# Top5proteins directory
+/top5proteins/*
+
+# Python cache
+__pycache__/
+utils/__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+venv/
+env/
+
+# IDE specific files
+.vscode/
+.idea/
+
+# Environment variables
+.env
+
+# Log files
+*.log
